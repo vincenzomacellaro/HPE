@@ -3,8 +3,7 @@ import torch
 import numpy as np
 import matplotlib.pyplot as plt
 import os
-from torch.utils.data import Dataset, DataLoader
-from train_vae import VAE, CustomDataset, load_data  # Ensure the VAE class and dataset functions are in train_vae.py
+from train_vae import VAE
 
 skeleton = [
     (0, 7), (7, 8), (8, 9), (9, 10), (8, 11),
@@ -44,7 +43,7 @@ if __name__ == '__main__':
 
     plot_path = "../plots/generated/"
     model_path = "../model/"
-    model_name = "vae_hd64_ld16.pth"
+    model_name = "vae_hd256_ld16.pth"
 
     os.makedirs(plot_path, exist_ok=True)
 

@@ -63,8 +63,7 @@ class VAE(nn.Module):
         z = self.reparameterize(mu, logvar)
         return self.decoder(z), mu, logvar
 
-
-# Loss Function Definition
+# not currently in use, refer to the "custom_loss_function.py" for the updated one
 def loss_function(recon_x, x, mu, logvar, beta=0.1):  # Adjust beta as needed
     recon_loss = nn.functional.mse_loss(recon_x, x, reduction='sum')
     kl_loss = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
@@ -85,7 +84,7 @@ def train_model(vae, train_loader, val_loader, optimizer, num_epochs,
     counter = 0
 
     beta = 0.1
-    gamma = 1
+    gamma = 100
 
     for epoch in range(num_epochs):
         vae.train()
@@ -172,7 +171,7 @@ if __name__ == '__main__':
 
     # input_dim = 67
     input_dim = 51
-    hidden_dim = 64
+    hidden_dim = 256
     latent_dim = 16
     vae = VAE(input_dim, hidden_dim, latent_dim)
 
