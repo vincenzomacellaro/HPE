@@ -23,10 +23,6 @@ val_path = "../data/val/val_data.json"
 test_path = "../data/test/test_data.json"
 
 
-# subjects = [1, 5, 6, 7, 8, 9, 11] -> pari a len(joints_data)
-# actions = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
-
-
 def load_json(file_path):
     with open(file_path, 'r') as file:
         data = json.load(file)
