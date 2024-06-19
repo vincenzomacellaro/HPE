@@ -84,6 +84,9 @@ def train_model(vae, train_loader, val_loader, optimizer, num_epochs,
     best_val_loss = float('inf')
     counter = 0
 
+    beta = 0.1
+    gamma = 1
+
     for epoch in range(num_epochs):
         vae.train()
         train_loss = 0.0
@@ -95,7 +98,7 @@ def train_model(vae, train_loader, val_loader, optimizer, num_epochs,
 
             # beta parameter constrols the influence of the KL-divergence on the total loss
             total_loss, recon_loss, kl_loss, limb_penalty = custom_loss_function(
-                recon_x, inputs, mu, logvar, train_ml_len, train_sl_len, beta=0.1, gamma=0.5
+                recon_x, inputs, mu, logvar, train_ml_len, train_sl_len, beta=beta, gamma=gamma
             )
 
             total_loss.backward()
@@ -113,7 +116,7 @@ def train_model(vae, train_loader, val_loader, optimizer, num_epochs,
                 inputs = batch
                 recon_x, mu, logvar = vae(inputs)
                 total_loss, recon_loss, kl_loss, limb_penalty = custom_loss_function(
-                    recon_x, inputs, mu, logvar, val_ml_len, val_sl_len, beta=0.1, gamma=0.5
+                    recon_x, inputs, mu, logvar, val_ml_len, val_sl_len, beta=beta, gamma=gamma
                 )
                 val_loss += total_loss.item()
 
@@ -181,11 +184,6 @@ if __name__ == '__main__':
         vae, train_loader, val_loader, optimizer, num_epochs,
         train_ml_len, train_sl_len, val_ml_len, val_sl_len
     )
-
-    # train_losses, val_losses = train_model(
-    #     vae, train_loader, val_loader, optimizer, num_epochs,
-    #     skeleton, train_mean_length, train_std_length  # Include these as parameters
-    # )
 
     plt.figure(figsize=(10, 5))
     plt.plot(train_losses, label='Training Loss')
