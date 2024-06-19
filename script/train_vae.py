@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from torch.utils.data import Dataset, DataLoader
 from load_dataset import load_data
-from data_processor import custom_loss_function
+from custom_loss_function import custom_loss_function
 
 
 # Custom Dataset Definition
@@ -73,10 +73,12 @@ def loss_function(recon_x, x, mu, logvar, beta=0.1):  # Adjust beta as needed
 
 
 def gen_model_name(hdim, ldim):
-    return "vae_hd" + str(hdim) + "_ld" + str(ldim) + "_limbpenalty.pth"
+    return "vae_hd" + str(hdim) + "_ld" + str(ldim) + ".pth"
 
 
-def train_model(vae, train_loader, val_loader, exp_train_lengths, exp_val_lengths, optimizer, num_epochs, patience=5):
+def train_model(vae, train_loader, val_loader, optimizer, num_epochs,
+                train_ml_len, train_sl_len, val_ml_len, val_sl_len, patience=5):
+
     train_losses = []
     val_losses = []
     best_val_loss = float('inf')
@@ -90,9 +92,12 @@ def train_model(vae, train_loader, val_loader, exp_train_lengths, exp_val_length
             inputs = batch
             optimizer.zero_grad()
             recon_x, mu, logvar = vae(inputs)
+
+            # beta parameter constrols the influence of the KL-divergence on the total loss
             total_loss, recon_loss, kl_loss, limb_penalty = custom_loss_function(
-                recon_x, inputs, mu, logvar, exp_train_lengths, beta=0.1
+                recon_x, inputs, mu, logvar, train_ml_len, train_sl_len, beta=0.1, gamma=0.5
             )
+
             total_loss.backward()
             optimizer.step()
             train_loss += total_loss.item()
@@ -107,8 +112,8 @@ def train_model(vae, train_loader, val_loader, exp_train_lengths, exp_val_length
             for batch in val_loader:
                 inputs = batch
                 recon_x, mu, logvar = vae(inputs)
-                total_loss, recon_loss, kl_loss, _ = custom_loss_function(
-                    recon_x, inputs, mu, logvar, exp_val_lengths, beta=0.1
+                total_loss, recon_loss, kl_loss, limb_penalty = custom_loss_function(
+                    recon_x, inputs, mu, logvar, val_ml_len, val_sl_len, beta=0.1, gamma=0.5
                 )
                 val_loss += total_loss.item()
 
@@ -123,7 +128,10 @@ def train_model(vae, train_loader, val_loader, exp_train_lengths, exp_val_length
             counter += 1
 
         print(f"Epoch [{epoch + 1}/{num_epochs}], Training Loss: {avg_train_loss}, Validation Loss: {avg_val_loss}")
-        print(f"\t [{epoch + 1}/{num_epochs}], Total Loss: {total_loss}, Reconstruction Loss: {recon_loss}, KL Loss: {kl_loss}, Limb Penalty: {limb_penalty}")
+        print(f"\t [{epoch + 1}/{num_epochs}], Total Loss: {total_loss} "
+              f"Reconstruction Loss: {recon_loss} "
+              f"KL Loss: {kl_loss} "
+              f"Limb Penalty: {limb_penalty}")
 
         if counter >= patience:
             print(f"Early stopping at epoch {epoch + 1} as validation loss did not improve for {patience} consecutive epochs.")
@@ -144,8 +152,10 @@ if __name__ == '__main__':
     model_path = "../model/"
     plot_path = "../plots/losses/"
 
-    train_samples, train_exp_length = load_data('train')
-    val_samples, val_exp_length = load_data('val')
+    # [...]_ml_len = mean_limb_length
+    # [...]_sl_len = std_limb_length
+    train_samples, train_ml_len, train_sl_len = load_data('train')
+    val_samples, val_ml_len, val_sl_len = load_data('val')
 
     train_dataset = CustomDataset(np.asarray(train_samples))
     val_dataset = CustomDataset(np.asarray(val_samples))
@@ -159,7 +169,7 @@ if __name__ == '__main__':
 
     # input_dim = 67
     input_dim = 51
-    hidden_dim = 128
+    hidden_dim = 64
     latent_dim = 16
     vae = VAE(input_dim, hidden_dim, latent_dim)
 
@@ -168,8 +178,14 @@ if __name__ == '__main__':
     optimizer = optim.Adam(vae.parameters(), lr=learning_rate, weight_decay=1e-4)
 
     train_losses, val_losses = train_model(
-        vae, train_loader, val_loader, train_exp_length, val_exp_length, optimizer, num_epochs
+        vae, train_loader, val_loader, optimizer, num_epochs,
+        train_ml_len, train_sl_len, val_ml_len, val_sl_len
     )
+
+    # train_losses, val_losses = train_model(
+    #     vae, train_loader, val_loader, optimizer, num_epochs,
+    #     skeleton, train_mean_length, train_std_length  # Include these as parameters
+    # )
 
     plt.figure(figsize=(10, 5))
     plt.plot(train_losses, label='Training Loss')
