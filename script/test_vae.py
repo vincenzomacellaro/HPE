@@ -43,7 +43,7 @@ if __name__ == '__main__':
 
     plot_path = "../plots/generated/"
     model_path = "../model/"
-    model_name = "vae_hd256_ld16.pth"
+    model_name = "vae_hd64_ld16_gamma10000.pth"
 
     os.makedirs(plot_path, exist_ok=True)
 

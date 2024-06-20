@@ -72,7 +72,7 @@ def loss_function(recon_x, x, mu, logvar, beta=0.1):  # Adjust beta as needed
 
 
 def gen_model_name(hdim, ldim):
-    return "vae_hd" + str(hdim) + "_ld" + str(ldim) + ".pth"
+    return "vae_hd" + str(hdim) + "_ld" + str(ldim) + "_gamma1000.pth"
 
 
 def train_model(vae, train_loader, val_loader, optimizer, num_epochs,
@@ -84,7 +84,7 @@ def train_model(vae, train_loader, val_loader, optimizer, num_epochs,
     counter = 0
 
     beta = 0.1
-    gamma = 100
+    gamma = 1000
 
     for epoch in range(num_epochs):
         vae.train()
@@ -171,8 +171,8 @@ if __name__ == '__main__':
 
     # input_dim = 67
     input_dim = 51
-    hidden_dim = 256
-    latent_dim = 16
+    hidden_dim = 128
+    latent_dim = 32
     vae = VAE(input_dim, hidden_dim, latent_dim)
 
     num_epochs = 100
