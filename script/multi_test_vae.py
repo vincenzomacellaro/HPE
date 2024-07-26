@@ -3,6 +3,7 @@ import torch
 import numpy as np
 import matplotlib.pyplot as plt
 import os
+import var
 from train_vae import VAE
 from load_dataset import load_data
 
@@ -77,7 +78,31 @@ if __name__ == '__main__':
     for entry in os.listdir(model_path):
         model = os.path.join(model_path, entry)
         print(model)
-        if os.path.isfile(model) and not entry.startswith('.'):
+        if entry == "vae_hd256_ld16.pth":
+            checkpoint = torch.load(model)
+            input_dim = checkpoint['input_dim']
+            latent_dim = checkpoint['latent_dim']
+            hidden_dim = checkpoint['hidden_dim']
+
+            vae = var.VAE(input_dim, hidden_dim, latent_dim)
+            vae.load_state_dict(checkpoint['state_dict'])
+            vae.eval()
+
+            generated_poses = generate_new_pose(vae, num_samples, latent_dim)
+            avg_gen_limb_lengths = process_generated_poses(generated_poses, skeleton)
+
+            print(f"\t [gen_set] avg. limb_lengths: {avg_gen_limb_lengths}")
+
+            # Calculate distances for each limb
+            limb_distances = calculate_euclidean_distance(avg_test_limb_lengths, avg_gen_limb_lengths)
+
+            # Aggregate these distances to a single score
+            total_distance, mean_distance = aggregate_distances(limb_distances)
+
+            print(f"\t Total Distance across all limbs: {total_distance}")
+            print(f"\t Mean Distance per limb: {mean_distance}")
+
+        elif os.path.isfile(model) and not entry.startswith('.'):
             checkpoint = torch.load(model)
             input_dim = checkpoint['input_dim']
             latent_dim = checkpoint['latent_dim']

@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 import os
 from train_vae import VAE
 
+import var
+
 skeleton = [
     (0, 7), (7, 8), (8, 9), (9, 10), (8, 11),
     (11, 12), (12, 13), (8, 14), (14, 15), (15, 16),
@@ -43,7 +45,7 @@ if __name__ == '__main__':
 
     plot_path = "../plots/generated/"
     model_path = "../model/"
-    model_name = "vae_hd64_ld16_gamma10000.pth"
+    model_name = "vae_hd256_ld16.pth"
 
     os.makedirs(plot_path, exist_ok=True)
 
@@ -52,7 +54,7 @@ if __name__ == '__main__':
     latent_dim = checkpoint['latent_dim']
     hidden_dim = checkpoint['hidden_dim']
 
-    vae = VAE(input_dim, hidden_dim, latent_dim)
+    vae = var.VAE(input_dim, hidden_dim, latent_dim)
     vae.load_state_dict(checkpoint['state_dict'])
     vae.eval()
 

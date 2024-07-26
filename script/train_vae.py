@@ -63,6 +63,7 @@ class VAE(nn.Module):
         z = self.reparameterize(mu, logvar)
         return self.decoder(z), mu, logvar
 
+
 # not currently in use, refer to the "custom_loss_function.py" for the updated one
 def loss_function(recon_x, x, mu, logvar, beta=0.1):  # Adjust beta as needed
     recon_loss = nn.functional.mse_loss(recon_x, x, reduction='sum')
