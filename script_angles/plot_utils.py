@@ -97,7 +97,7 @@ def plot_pose_from_joint_angles(kpts, title):
     frame_rotations = kpts['joint_angles']
 
     #for plotting
-    for _j in kpts['joint_positions']:
+    for _j in kpts['joints']:
         if _j == 'hips':
             continue
 

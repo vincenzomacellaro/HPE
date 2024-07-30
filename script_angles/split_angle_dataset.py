@@ -27,9 +27,9 @@ if __name__ == '__main__':
 
     pos_data_path = "../data/train/"
 
-    ang_train_path = "../angle_data/train/train_data.json"
-    ang_val_path = "../angle_data/val/val_data.json"
-    ang_test_path = "../angle_data/test/test_data.json"
+    ang_train_path = "../angles_data/train/train_data.json"
+    ang_val_path = "../angles_data/val/val_data.json"
+    ang_test_path = "../angles_data/test/test_data.json"
 
     avg_pose_file = "../angles_json/avg_pose.json"
     global_scale_factor_file = "../angles_json/global_scale_factor.json"
@@ -42,3 +42,4 @@ if __name__ == '__main__':
         print("Global Scale Factor file missing. Please run the \"get_global_scale_factor.py\" script first.")
     elif not os.path.exists(ang_train_path):
         save_angles_data(ang_train_path, ang_val_path, ang_test_path)
+        print("Correctly saved angles data.")

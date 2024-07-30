@@ -83,7 +83,7 @@ def loss_function(recon_x, x, mu, logvar):
     # Compute the binary cross-entropy loss between the reconstructed output and the input data
     BCE = F.binary_cross_entropy(recon_x, x.view(-1, 51), reduction="sum")
     # Compute the Kullback-Leibler divergence between the learned latent variable distribution and a standard Gaussian distribution
-    KLD = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())*0.0001
+    KLD = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp()) * 0.0001
     # Combine the two losses by adding them together and return the result
     return BCE + KLD
 

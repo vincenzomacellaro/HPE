@@ -1,14 +1,26 @@
 import json
 import re
 import numpy as np
-import utils
 import os
+import utils
 
 from align_poses import procrustes
 from plot_utils import plot_pose_from_joint_angles
 
 avg_pose_file = "../angles_json/avg_pose.json"
 global_scale_factor_file = "../angles_json/global_scale_factor.json"
+
+angles_path_dict = {
+    "train": "../angles_data/train/train_data.json",
+    "val": "../angles_data/val/val_data.json",
+    "test": "../angles_data/test/test_data.json"
+}
+
+pos_path_dict = {
+    "train": "../data/train/train_data.json",
+    "val": "../data/val/val_data.json",
+    "test": "../data/test/test_data.json"
+}
 
 scale_factor = None
 avg_pose = None
@@ -207,19 +219,8 @@ def calculate_limb_lengths(frame, skeleton):
 
 
 def load_data(choice, scale=True):
-    train_path = "../data/train/train_data.json"
-    val_path = "../data/val/val_data.json"
-    test_path = "../data/test/test_data.json"
-
-    if choice == "train":
-        path = [train_path]
-    elif choice == "val":
-        path = [val_path]
-    elif choice == "test":
-        path = [test_path]
-    else:
-        return []
-
+    # choice = "train", "val", "test" -> pesca direttamente dal dict
+    path = angles_path_dict[choice]
     raw_joints_data = extract_joints(path, scale)
 
     return raw_joints_data
@@ -262,28 +263,85 @@ def convert_to_angles(dicts, target_path):
         json.dump(serialized_data, f, indent=4)
 
 
-def load_angles_data(choice):
-    train_path = "../angle_data/train/train_data.json"
-    val_path = "../angle_data/val/val_data.json"
-    test_path = "../angle_data/test/test_data.json"
+def filter_samples(original_sample):
+    keys = ['joint_angles', 'hierarchy', 'normalization']
+    filtered_sample = {}
 
-    if choice == "train":
-        path = train_path
-    elif choice == "val":
-        path = val_path
-    elif choice == "test":
-        path = test_path
-    else:
-        return []
+    for key in original_sample:
+
+        if key == 'joint_positions':
+            internal_key = 'hips'
+            filtered_sample[key] = {}
+            filtered_sample[key][internal_key] = original_sample[key][internal_key]
+            continue
+
+        if key == 'joint_angles' or key == 'base_skeleton':
+            # filtrare malamente i non_zero values:
+            filtered_sample[key] = {}
+            for internal_key in original_sample[key]:
+
+                values = np.array(original_sample[key][internal_key])
+                non_zero_values = values[np.nonzero(values)]
+
+                if len(non_zero_values) > 0:
+                    filtered_sample[key][internal_key] = non_zero_values
+                    # 'hips': array([0., 0., 0.]) -> da aggiungere in fase di ricostruzione
+
+            continue
+
+        # else
+        if key in keys:
+            filtered_sample[key] = original_sample[key]
+
+    return filtered_sample
+
+
+def load_angles_data(choice):
+    path = angles_path_dict[choice]
 
     joints_data = load_json(path)
     joints_data_np = []
 
     for sample in joints_data:
-        sample_np = to_numpy(sample)
-        joints_data_np.append(sample_np)
+
+        f_sample = filter_samples(sample)
+        sample_np = to_numpy(f_sample)
+        flat_sample = flatten_numeric_values(sample_np)
+
+        joints_data_np.append(flat_sample)
 
     return joints_data_np
+
+
+def max_abs_scaling(data):
+    max_abs = np.max(np.abs(data), axis=0)
+    max_abs[max_abs == 0] = 1  # to avoid division by zero
+    scaled_data = data / max_abs
+    return scaled_data, max_abs
+
+
+def save_parameters(scale_params, filepath):
+    with(open(filepath, 'w')) as f:
+        json.dump({'scale_params': scale_params.tolist()}, f)
+
+
+def apply_scale(data, scale_params):
+    return data / scale_params
+
+
+def load_data_for_train(choice, is_train=False):
+    param_file = "../angles_json/data_parameters.json"
+    data = np.array(load_angles_data(choice))
+
+    if is_train:
+        normalized_data, scale_params = max_abs_scaling(data)
+        save_parameters(scale_params, param_file)
+        return normalized_data
+    else:
+        scale_params = json.load(open(param_file))
+        scale_params_numpy = np.array(scale_params["scale_params"])
+        normalized_data = apply_scale(data, scale_params_numpy)
+        return normalized_data
 
 
 def convert_to_dictionary(kpts):
@@ -628,15 +686,58 @@ def flatten_numeric_values(obj):
     return np.array(result)
 
 
+def map_to_base_skeleton(values):
+    dict = {}
+
+    sk_map = {
+        'lefthip': [1.0, 0., 0.],
+        'leftknee': [0., 1.0, 0.],
+        'leftfoot': [0., 1.0, 0.],
+        'righthip': [1.0, 0., 0.],
+        'rightknee': [0., 1.0, 0.],
+        'rightfoot': [0., 1.0, 0.],
+        'leftshoulder': [1.0, 0., 0.],
+        'leftelbow': [1.0, 0., 0.],
+        'leftwrist': [1.0, 0., 0.],
+        'rightshoulder': [1.0, 0., 0.],
+        'rightelbow': [1.0, 0., 0.],
+        'rightwrist': [1.0, 0., 0.],
+        'neck': [0., 1., 0.],
+        'hips': [0., 0., 0.],
+    }
+
+    sk_list = list(sk_map.keys())
+    for idx, v in enumerate(values):
+        sk_map_key = sk_list[idx]
+        sk_map_values = np.array(sk_map[sk_list[idx]])
+        dict[sk_map_key] = v * sk_map_values
+
+    dict['hips'] = np.array([0.0, 0.0, 0.0])
+
+    return dict
+
+
 def reconstruct_from_array(flat_array, file):
     """
     Helper function to reconstruct numpy array from flat numpy array.
     """
     # template
+    # template = {
+    #     "joint_positions": {},
+    #     "joint_angles": {},
+    #     "bone_lengths": {},
+    #     "hierarchy": {},
+    #     "root_joint": {},
+    #     "base_skeleton": {},
+    #     "normalization": {}
+    # }
+
+    end_points = ["leftfoot_angles", "rightfoot_angles", "leftwrist_angles", "rightwrist_angles"]
+
     template = {
+        "joints": {},
         "joint_positions": {},
         "joint_angles": {},
-        "bone_lengths": {},
         "hierarchy": {},
         "root_joint": {},
         "base_skeleton": {},
@@ -649,6 +750,14 @@ def reconstruct_from_array(flat_array, file):
     sample = template.copy()
 
     for temp_key in template:
+        if temp_key == 'joints':
+            sample[temp_key] = data_dicts["joint_positions_keys"]
+            continue
+
+        if temp_key == 'joint_positions':
+            sample[temp_key]['hips'] = flat_array[flat_idx: flat_idx + 3]
+            flat_idx += 3
+            continue
 
         if temp_key == 'bone_lengths':
             curr_key = temp_key + '_keys'
@@ -656,14 +765,12 @@ def reconstruct_from_array(flat_array, file):
                 sample[temp_key][pos_key] = {}
                 sample[temp_key][pos_key] = float(flat_array[flat_idx])
                 flat_idx += 1
-
             continue
 
         if temp_key == 'hierarchy':
             sample[temp_key] = {}
             for entry in data_dicts[temp_key]:
                 sample[temp_key][entry] = np.array(data_dicts[temp_key][entry])
-
             continue
 
         if temp_key == 'root_joint':
@@ -674,21 +781,28 @@ def reconstruct_from_array(flat_array, file):
             sample[temp_key] = flat_array[-1]
             continue
 
-        if temp_key == "joint_positions" or temp_key == "base_skeleton":
-            data_key = temp_key + "_keys"
-            for entry in data_dicts[data_key]:
-                sample[temp_key][entry] = {}
-                sample[temp_key][entry] = flat_array[flat_idx: flat_idx + 3]
+        if temp_key == "base_skeleton":
+            # data_key = temp_key + "_keys"
 
-                flat_idx += 3
+            # map to base skeleton
+            values_to_map = flat_array[flat_idx: flat_idx + 13]
+
+            sample[temp_key] = {}
+            sample[temp_key] = map_to_base_skeleton(values_to_map)
+
+            flat_idx += 13
 
         if temp_key == "joint_angles":
             data_key = temp_key + "_keys"
             for entry in data_dicts[data_key]:
                 sample[temp_key][entry] = {}
-                sample[temp_key][entry] = (flat_array[flat_idx: flat_idx + 3]).reshape(1, 3)
-
-                flat_idx += 3
+                if entry in end_points:
+                    sample[temp_key][entry] = np.array([0.0, 0.0, 0.0])
+                    # non serve aggiornare il flat_idx in questo caso
+                else:
+                    sample[temp_key][entry] = (flat_array[flat_idx: flat_idx + 3]).reshape(1, 3)
+                    flat_idx += 3
+            # aggiungere gli end_points
 
     return sample
 
