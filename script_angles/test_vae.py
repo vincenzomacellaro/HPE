@@ -8,8 +8,9 @@ from human36_to_angles import plot_pose_from_joint_angles
 from human36_to_angles import load_data_for_train
 
 
-def reconstruction_test(vae, test_data):
-    num_samples = 1  # can be changed
+def reconstruction_test(vae, num_samples=1):
+    test_data = load_data_for_train("test")
+
     for i in range(num_samples):
 
         random_index = random.randint(0, len(test_data) - 1)
@@ -42,7 +43,10 @@ def reconstruction_test(vae, test_data):
     return
 
 
-def generation_test(vae, test_data):
+def generation_test(vae, num_samples=3):
+
+    test_data = load_data_for_train("test")
+
     # Suppose 'sample' is your input sample from the test set
     random_index = random.randint(0, len(test_data) - 1)
     sample = test_data[random_index]
@@ -58,11 +62,13 @@ def generation_test(vae, test_data):
     print(encoded.shape)
 
     # Generate multiple samples
-    num_samples = 3
     gen_samples = torch.stack([vae.reparameterize(mu, log_var) for _ in range(num_samples)])
 
-    # Correct call to decoder, ensuring the input is correctly shaped
-    decoded_poses = vae.decoder(gen_samples.view(-1, latent_dim)).detach().cpu().numpy()
+    # Pass the noise through the decoder to generate new data
+    vae.eval()  # Set the model to evaluation mode
+    with torch.no_grad():  # Turn off gradients to speed up the process
+        # Correct call to decoder, ensuring the input is correctly shaped
+        decoded_poses = vae.decoder(gen_samples.view(-1, latent_dim)).detach().cpu().numpy()
 
     for idx, d_pose in enumerate(decoded_poses):
         print(f">GEN_POSE: \n{d_pose}")
@@ -74,15 +80,38 @@ def generation_test(vae, test_data):
     return
 
 
+def sample_from_latent_space(vae, num_samples, latent_dim, device='cpu'):
+    # Sample random noise (z) from the standard normal distribution
+    z = torch.randn(num_samples, latent_dim).to(device)
+
+    # Pass the noise through the decoder to generate new data
+    vae.eval()  # Set the model to evaluation mode
+    with torch.no_grad():  # Turn off gradients to speed up the process
+        generated_samples = vae.decoder(z)
+
+    # Move the generated samples to CPU and convert to numpy array for easy handling
+    generated_samples = generated_samples.cpu().numpy()
+
+    return generated_samples
+
+
+def pure_generation_test(vae, num_samples, latent_dim):
+
+    samples_from_ls = sample_from_latent_space(vae, num_samples, latent_dim)
+
+    for sample in samples_from_ls:
+        print(f"SAMPLE FROM LATENT SPACE: \n{sample} \n{sample.shape}")
+        rec_sample = reconstruct_from_array(sample)
+        print(f"REC SAMPLE: \n{rec_sample}")
+        plot_pose_from_joint_angles(rec_sample, "3D pose from pure samples")
+
+
 if __name__ == '__main__':
 
     plot_path = "../plots/generated/"
     model_path = "../model/angles/"
-    model_name = "vae_angle_hd128x64_ld32.pth"
+    model_name = "vae_angle_hd128x64_ld20.pth"
     sample_keys_file = "../angles_json/sample_keys.json"
-
-    test_path = "../angles_data/test/test_data.json"
-    test_data = load_data_for_train("test")
 
     os.makedirs(plot_path, exist_ok=True)
 
@@ -93,7 +122,7 @@ if __name__ == '__main__':
 
     vae = VAE(input_dim, hidden_dim, latent_dim)
     vae.load_state_dict(checkpoint['state_dict'])
-    vae.eval()
 
     # reconstruction_test(vae, test_data)
-    generation_test(vae, test_data)
+    # generation_test(vae, test_data)
+    pure_generation_test(vae, 5, 20)

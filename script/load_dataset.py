@@ -102,7 +102,7 @@ def calculate_limb_lengths(frame, skeleton):
     return limb_lengths
 
 
-def plot_joints_and_limbs(joint_coords, skeleton, title="3D Joint Plot"):
+def plot_joints_and_limbs(joint_coords, skeleton=skeleton, title="3D Joint Plot"):
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
 
@@ -135,19 +135,19 @@ def plot_joints_and_limbs(joint_coords, skeleton, title="3D Joint Plot"):
     plt.show()
 
 
-def visualize_pose(original_frame, norm_frame):
-    frame_values = []
-    for entry in original_frame.values():
-        for value in entry:
-            frame_values.append(value)
-
-    print(f"Original values: {frame_values}")
-    print(f"Normalized values: {frame_values}")
-
-    plot_joints_and_limbs(np.array(frame_values), skeleton, title="Before Normalization")
-    plot_joints_and_limbs(norm_frame, skeleton, title="After Normalization")
-
-    print(" *** " + 3) # used to make the program crash at a given point
+# def visualize_pose(original_frame, norm_frame):
+#     frame_values = []
+#     for entry in original_frame.values():
+#         for value in entry:
+#             frame_values.append(value)
+#
+#     print(f"Original values: {frame_values}")
+#     print(f"Normalized values: {frame_values}")
+#
+#     plot_joints_and_limbs(np.array(frame_values), skeleton, title="Before Normalization")
+#     plot_joints_and_limbs(norm_frame, skeleton, title="After Normalization")
+#
+#     print(" *** " + 3) # used to make the program crash at a given point
 
 
 def pre_process_joints(data):

@@ -247,7 +247,6 @@ def convert_to_angles(dicts, target_path):
             oriented_pose[0, kpt_num] = R @ oriented_pose[0, kpt_num]
 
         kpts = convert_to_dictionary(oriented_pose)
-
         add_hips_and_neck(kpts)
         get_bone_lengths(kpts)
         get_base_skeleton(kpts)
@@ -276,7 +275,6 @@ def filter_samples(original_sample):
             continue
 
         if key == 'joint_angles' or key == 'base_skeleton':
-            # filtrare malamente i non_zero values:
             filtered_sample[key] = {}
             for internal_key in original_sample[key]:
 
@@ -285,7 +283,7 @@ def filter_samples(original_sample):
 
                 if len(non_zero_values) > 0:
                     filtered_sample[key][internal_key] = non_zero_values
-                    # 'hips': array([0., 0., 0.]) -> da aggiungere in fase di ricostruzione
+                    # 'hips': array([0., 0., 0.]) -> to be added during reconstruction
 
             continue
 
@@ -304,9 +302,9 @@ def load_angles_data(choice):
 
     for sample in joints_data:
 
-        f_sample = filter_samples(sample)
-        sample_np = to_numpy(f_sample)
-        flat_sample = flatten_numeric_values(sample_np)
+        f_sample = filter_samples(sample)                # filters the complete sample to get only the needed data from it
+        sample_np = to_numpy(f_sample)                   # converts to numpy values
+        flat_sample = flatten_numeric_values(sample_np)  # flattens the numeric values extracted in the previous sample
 
         joints_data_np.append(flat_sample)
 
@@ -717,21 +715,8 @@ def map_to_base_skeleton(values):
     return dict
 
 
-def reconstruct_from_array(flat_array, file):
-    """
-    Helper function to reconstruct numpy array from flat numpy array.
-    """
-    # template
-    # template = {
-    #     "joint_positions": {},
-    #     "joint_angles": {},
-    #     "bone_lengths": {},
-    #     "hierarchy": {},
-    #     "root_joint": {},
-    #     "base_skeleton": {},
-    #     "normalization": {}
-    # }
-
+def reconstruct_from_array(flat_array, file="../angles_json/sample_keys.json"):
+    # Helper function to reconstruct numpy array from flat numpy array.
     end_points = ["leftfoot_angles", "rightfoot_angles", "leftwrist_angles", "rightwrist_angles"]
 
     template = {
@@ -782,8 +767,6 @@ def reconstruct_from_array(flat_array, file):
             continue
 
         if temp_key == "base_skeleton":
-            # data_key = temp_key + "_keys"
-
             # map to base skeleton
             values_to_map = flat_array[flat_idx: flat_idx + 13]
 
