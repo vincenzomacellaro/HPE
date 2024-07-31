@@ -25,32 +25,32 @@ pos_path_dict = {
 scale_factor = None
 avg_pose = None
 
-named_skeleton = [
-    ('leftshoulder', 'leftelbow'),  # Left Shoulder to Left Elbow
-    ('leftshoulder', 'rightshoulder'),  # Left Shoulder to Right Shoulder
-    ('lefthip', 'leftknee'),  # Left Hip to Left Knee
-    ('lefthip', 'righthip'),  # Left Hip to Right Hip
-    ('leftknee', 'leftfoot'),  # Left Knee to Left Ankle
-    ('rightshoulder', 'rightelbow'),  # Right Shoulder to Right Elbow
-    ('righthip', 'rightknee'),  # Right Hip to Right Knee
-    ('rightknee', 'rightfoot'),  # Right Knee to Right Ankle
-    ('leftelbow', 'leftwrist'),  # Left Elbow to Left Wrist
-    ('rightelbow', 'rightwrist')  # Right Elbow to Right Wrist
-]
+# named_skeleton = [
+#     ('leftshoulder', 'leftelbow'),  # Left Shoulder to Left Elbow
+#     ('leftshoulder', 'rightshoulder'),  # Left Shoulder to Right Shoulder
+#     ('lefthip', 'leftknee'),  # Left Hip to Left Knee
+#     ('lefthip', 'righthip'),  # Left Hip to Right Hip
+#     ('leftknee', 'leftfoot'),  # Left Knee to Left Ankle
+#     ('rightshoulder', 'rightelbow'),  # Right Shoulder to Right Elbow
+#     ('righthip', 'rightknee'),  # Right Hip to Right Knee
+#     ('rightknee', 'rightfoot'),  # Right Knee to Right Ankle
+#     ('leftelbow', 'leftwrist'),  # Left Elbow to Left Wrist
+#     ('rightelbow', 'rightwrist')  # Right Elbow to Right Wrist
+# ]
 
-named_skeleton_hips_neck = [
-    ('leftshoulder', 'leftelbow'),  # Left Shoulder to Left Elbow
-    ('leftshoulder', 'rightshoulder'),  # Left Shoulder to Right Shoulder
-    ('lefthip', 'leftknee'),  # Left Hip to Left Knee
-    ('lefthip', 'righthip'),  # Left Hip to Right Hip
-    ('leftknee', 'leftfoot'),  # Left Knee to Left Ankle
-    ('rightshoulder', 'rightelbow'),  # Right Shoulder to Right Elbow
-    ('righthip', 'rightknee'),  # Right Hip to Right Knee
-    ('rightknee', 'rightfoot'),  # Right Knee to Right Ankle
-    ('leftelbow', 'leftwrist'),  # Left Elbow to Left Wrist
-    ('rightelbow', 'rightwrist'),  # Right Elbow to Right Wrist
-    ('hips', 'neck')  # Hips Neck
-]
+# named_skeleton_hips_neck = [
+#     ('leftshoulder', 'leftelbow'),  # Left Shoulder to Left Elbow
+#     ('leftshoulder', 'rightshoulder'),  # Left Shoulder to Right Shoulder
+#     ('lefthip', 'leftknee'),  # Left Hip to Left Knee
+#     ('lefthip', 'righthip'),  # Left Hip to Right Hip
+#     ('leftknee', 'leftfoot'),  # Left Knee to Left Ankle
+#     ('rightshoulder', 'rightelbow'),  # Right Shoulder to Right Elbow
+#     ('righthip', 'rightknee'),  # Right Hip to Right Knee
+#     ('rightknee', 'rightfoot'),  # Right Knee to Right Ankle
+#     ('leftelbow', 'leftwrist'),  # Left Elbow to Left Wrist
+#     ('rightelbow', 'rightwrist'),  # Right Elbow to Right Wrist
+#     ('hips', 'neck')  # Hips Neck
+# ]
 
 # Mapping from current dataset joint indices to the required indices (1-based index)
 joint_index_map = {
@@ -113,9 +113,7 @@ def extract_relevant_joints(data):
 
             new_idx = joint_index_map[joint_idx][0] * 3
             extracted_coords = joint_coords[1]
-
             scaled_array = [x * scale_factor for x in extracted_coords]
-
             frame_data[new_idx:new_idx + 3] = scaled_array
 
     return frame_data
@@ -219,7 +217,6 @@ def calculate_limb_lengths(frame, skeleton):
 
 
 def load_data(choice, scale=True):
-    # choice = "train", "val", "test" -> pesca direttamente dal dict
     path = angles_path_dict[choice]
     raw_joints_data = extract_joints(path, scale)
 
@@ -637,10 +634,8 @@ def to_numpy(obj):
         return obj
 
 
-# Function to parse the original sample
-def parse_and_save_keys(original_sample, filename):
-    if not os.path.exists(filename):
-        # Extract the keys from the original sample
+def parse_and_save_keys(original_sample, sample_keys_file):
+    if not os.path.exists(sample_keys_file):
         joint_positions_keys = list(original_sample['joint_positions'].keys())
         joint_angles_keys = list(original_sample['joint_angles'].keys())
         bone_lengths_keys = list(original_sample['bone_lengths'].keys())
@@ -657,10 +652,11 @@ def parse_and_save_keys(original_sample, filename):
         }
 
         # Save the keys dictionary to a JSON file
-        with open(filename, 'w') as f:
+        with open(sample_keys_file, 'w') as f:
             json.dump(keys, f, indent=4)
 
-        print(f"File {filename} created and saved.")
+        print(f"File {sample_keys_file} created and saved.")
+    return
 
 
 def flatten_numeric_values(obj):
@@ -716,6 +712,10 @@ def map_to_base_skeleton(values):
 
 
 def reconstruct_from_array(flat_array, file="../angles_json/sample_keys.json"):
+
+    if not os.path.exists(file):
+        create_sample_keys_file(file)
+
     # Helper function to reconstruct numpy array from flat numpy array.
     end_points = ["leftfoot_angles", "rightfoot_angles", "leftwrist_angles", "rightwrist_angles"]
 
@@ -767,7 +767,6 @@ def reconstruct_from_array(flat_array, file="../angles_json/sample_keys.json"):
             continue
 
         if temp_key == "base_skeleton":
-            # map to base skeleton
             values_to_map = flat_array[flat_idx: flat_idx + 13]
 
             sample[temp_key] = {}
@@ -781,29 +780,35 @@ def reconstruct_from_array(flat_array, file="../angles_json/sample_keys.json"):
                 sample[temp_key][entry] = {}
                 if entry in end_points:
                     sample[temp_key][entry] = np.array([0.0, 0.0, 0.0])
-                    # non serve aggiornare il flat_idx in questo caso
+                    # no need to update the flat_idx in this case as we are "creating" values for the end_points.
                 else:
                     sample[temp_key][entry] = (flat_array[flat_idx: flat_idx + 3]).reshape(1, 3)
                     flat_idx += 3
-            # aggiungere gli end_points
 
     return sample
 
 
-def test_script():
-    # tests the entire script with a single sample taken from the 'train', 'val' or 'test' script
+def create_sample_keys_file(sample_keys_file):
     data = load_angles_data('test')
     sample = data[0]
+    parse_and_save_keys(sample, sample_keys_file)
+    return
 
+
+def test_script():
+    # tests the entire script with a single sample taken from the 'train', 'val' OR 'test' script
+    data = load_angles_data('test')
+    sample = data[0]
     plot_pose_from_joint_angles(sample, "3D plot from original sample")
 
-    sample_keys_file = '../angles_json/sample_keys.json'
+    sample_keys_file = "../angles_json/sample_keys.json"
 
     # [parse_and_save_keys] used to save the template structure for the samples reconstruction
+    # it saves a new sample_keys.json file only if not existent
     parse_and_save_keys(sample, sample_keys_file)
     flat_sample = flatten_numeric_values(sample)
 
-    reconstructed_data = reconstruct_from_array(flat_sample, sample_keys_file)
+    reconstructed_data = reconstruct_from_array(flat_sample)
     plot_pose_from_joint_angles(reconstructed_data, "3D plot from [reconstructed] sample")
 
 
