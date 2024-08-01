@@ -139,7 +139,7 @@ def train_model(vae, train_loader, val_loader, optimizer, num_epochs, patience=5
         if avg_val_loss < best_val_loss:
             best_val_loss = avg_val_loss
             counter = 0
-            torch.save(vae.state_dict(), model_path + gen_model_name(hidden_dims[0], latent_dim))
+            torch.save(vae.state_dict(), model_path + gen_model_name(hidden_dims, latent_dim))
         else:
             counter += 1
 
@@ -179,7 +179,7 @@ if __name__ == '__main__':
 
     input_dim = 47
     hidden_dims = [128, 64]
-    latent_dim = 16
+    latent_dim = 20
     vae = VAE(input_dim, hidden_dims, latent_dim).float()
 
     num_epochs = 100
