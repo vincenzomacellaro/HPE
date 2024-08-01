@@ -7,11 +7,13 @@ def get_R_x(theta):
                   [0, np.sin(theta),  np.cos(theta)]])
     return R
 
+
 def get_R_y(theta):
     R = np.array([[np.cos(theta), 0, np.sin(theta)],
                   [0, 1, 0],
                   [-np.sin(theta), 0,  np.cos(theta)]])
     return R
+
 
 def get_R_z(theta):
     R = np.array([[np.cos(theta), -np.sin(theta), 0],
@@ -48,8 +50,8 @@ def Get_R(A,B):
 
     #full rotation matrix
     R = C.T @ R_uvw @ C
-    #print(R)
     return R
+
 
 #Same calculation as above using a different formalism
 def Get_R2(A, B):
@@ -75,39 +77,39 @@ def Get_R2(A, B):
 def Decompose_R_ZYX(R):
 
     #decomposes as RzRyRx. Note the order: ZYX <- rotation by x first
-    thetaz = np.arctan2(R[1,0], R[0,0])
-    thetay = np.arctan2(-R[2,0], np.sqrt(R[2,1]**2 + R[2,2]**2))
-    thetax = np.arctan2(R[2,1], R[2,2])
+    thetaz = np.arctan2(R[1, 0], R[0, 0])
+    thetay = np.arctan2(-R[2, 0], np.sqrt(R[2, 1]**2 + R[2, 2]**2))
+    thetax = np.arctan2(R[2, 1], R[2, 2])
 
     return thetaz, thetay, thetax
 
 def Decompose_R_ZXY(R):
 
     #decomposes as RzRXRy. Note the order: ZXY <- rotation by y first
-    thetaz = np.arctan2(-R[0,1], R[1,1])
-    thetay = np.arctan2(-R[2,0], R[2,2])
-    thetax = np.arctan2(R[2,1], np.sqrt(R[2,0]**2 + R[2,2]**2))
+    thetaz = np.arctan2(-R[0, 1], R[1, 1])
+    thetay = np.arctan2(-R[2, 0], R[2, 2])
+    thetax = np.arctan2(R[2, 1], np.sqrt(R[2, 0]**2 + R[2, 2]**2))
 
     return thetaz, thetay, thetax
 
 
-def Decompose_R_XYZ(R):
-    """
-    Decomposes a rotation matrix R into angles based on XYZ rotation order.
-    Assumes the matrix R applies rotations around X, then Y, then Z.
-
-    Theta_x (Roll) is derived from the rotation about the X-axis, which affects the 2nd
-    and 3rd rows of the 3rd column of the rotation matrix.
-
-    Theta_y (Pitch) is derived from the rotation about the Y-axis, which can be seen from
-    the negative value of the 3rd row of the 1st column and the hypothenuse formed by the
-    1st and 2nd rows of the 1st column.
-
-    Theta_x (Yaw) is derived from the rotation about the Z-axis, and it is calculated using
-    the 1st and 2nd rows of the 1st column of the matrix.
-    """
-    thetax = np.arctan2(R[2,1], R[2,2])
-    thetay = np.arctan2(-R[2,0], np.sqrt(R[0,0]**2 + R[1,0]**2))
-    thetaz = np.arctan2(R[1,0], R[0,0])
-
-    return thetax, thetay, thetaz
+# def Decompose_R_XYZ(R):
+#     """
+#     Decomposes a rotation matrix R into angles based on XYZ rotation order.
+#     Assumes the matrix R applies rotations around X, then Y, then Z.
+#
+#     Theta_x (Roll) is derived from the rotation about the X-axis, which affects the 2nd
+#     and 3rd rows of the 3rd column of the rotation matrix.
+#
+#     Theta_y (Pitch) is derived from the rotation about the Y-axis, which can be seen from
+#     the negative value of the 3rd row of the 1st column and the hypothenuse formed by the
+#     1st and 2nd rows of the 1st column.
+#
+#     Theta_x (Yaw) is derived from the rotation about the Z-axis, and it is calculated using
+#     the 1st and 2nd rows of the 1st column of the matrix.
+#     """
+#     thetax = np.arctan2(R[2,1], R[2,2])
+#     thetay = np.arctan2(-R[2,0], np.sqrt(R[0,0]**2 + R[1,0]**2))
+#     thetaz = np.arctan2(R[1,0], R[0,0])
+#
+#     return thetax, thetay, thetaz
