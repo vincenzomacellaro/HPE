@@ -6,6 +6,7 @@ import utils
 
 from align_poses import procrustes
 from plot_utils import plot_pose_from_joint_angles
+from get_avg_pose import get_avg_pose
 
 avg_pose_file = "../angles_json/avg_pose.json"
 global_scale_factor_file = "../angles_json/global_scale_factor.json"
@@ -205,12 +206,7 @@ def convert_to_angles(dicts, target_path):
 
     global avg_pose
     if not avg_pose:
-        # Read the JSON file
-        with open(avg_pose_file, 'r') as json_file:
-            avg_pose_list = json.load(json_file)
-
-        # Convert the list back to a numpy array
-        avg_pose = np.array(avg_pose_list)
+        avg_pose = get_avg_pose()
 
     for joints_array in dicts:
         frame_kpts = np.array(joints_array).reshape(1, 12, 3)
@@ -462,6 +458,7 @@ def get_base_skeleton(kpts, normalization_bone='neck'):
     _set_length('shoulder')
     _set_length('elbow')
     _set_length('wrist')
+
     base_skeleton['neck'] = offset_directions['neck'] * (body_lengths['neck'] / normalization)
 
     kpts['offset_directions'] = offset_directions

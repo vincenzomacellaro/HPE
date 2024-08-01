@@ -11,19 +11,28 @@ def compute_avg_pose(file):
     return average_pose
 
 
-if __name__ == '__main__':
-    # Calculates the average pose for all keypoints from the ref_kpts.dat dataset
-
-    avg_pose_file = "../angles_json/avg_pose.json"
+def get_avg_pose(avg_pose_file="../angles_json/avg_pose.json"):
+    kpts_file = "../ref_data/ref_kpts.dat"
     if not os.path.exists(avg_pose_file):
-        kpts_file = "../ref_data/ref_kpts.dat"
         avg_pose = compute_avg_pose(kpts_file)
-
         avg_pose_list = avg_pose.tolist()
 
         with open(avg_pose_file, 'w') as json_file:
             json.dump(avg_pose_list, json_file, indent=4)
 
         print(f"Average pose written to {avg_pose_file}")
+        return avg_pose
+    else:
+        with open(avg_pose_file, "r") as f:
+            avg_pose = json.load(f)
+            np_avg_pose = np.array(avg_pose)
+            return np_avg_pose
+
+
+if __name__ == '__main__':
+    # Calculates the average pose for all keypoints from the ref_kpts.dat dataset
+    # avg_pose_file = "../angles_json/avg_pose.json"
+    get_avg_pose()
+
 
 
