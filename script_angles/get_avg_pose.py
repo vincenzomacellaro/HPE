@@ -2,11 +2,9 @@ import numpy as np
 import json
 import os
 
-from read_utils import read_keypoints
-
-
 def compute_avg_pose(file):
-    kpts = read_keypoints(file)
+    from load_data_utils import load_ref_kpts
+    kpts = load_ref_kpts(file)
     average_pose = np.mean(kpts, axis=0)
     return average_pose
 

@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import torch.nn.functional as F
 
 from torch.utils.data import Dataset, DataLoader
-from script_angles.human36_to_angles import load_data_for_train
+from load_data_utils import load_data_for_train
 
 
 class CustomDataset(Dataset):
@@ -179,7 +179,7 @@ if __name__ == '__main__':
 
     input_dim = 47
     hidden_dims = [128, 64]
-    latent_dim = 20
+    latent_dim = 16
     vae = VAE(input_dim, hidden_dims, latent_dim).float()
 
     num_epochs = 100

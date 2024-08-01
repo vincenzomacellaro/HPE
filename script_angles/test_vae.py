@@ -3,9 +3,9 @@ import torch
 import os
 
 from train_vae import VAE
+from plot_utils import plot_pose_from_joint_angles
 from human36_to_angles import reconstruct_from_array
-from human36_to_angles import plot_pose_from_joint_angles
-from human36_to_angles import load_data_for_train
+from load_data_utils import load_data_for_train
 
 
 def reconstruction_test(vae, num_samples=1):
