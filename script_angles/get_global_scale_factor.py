@@ -1,7 +1,7 @@
 import os.path
 import json
 import numpy as np
-import github.utils as utils
+import utils
 
 from human36_to_angles import load_data
 from human36_to_angles import convert_to_dictionary
