@@ -12,10 +12,7 @@ def compute_avg_pose(file):
 
 
 if __name__ == '__main__':
-    """
-    Calculates the average pose for all keypoints from the ref_kpts.dat dataset
-    (joint_angles_calculate script)
-    """
+    # Calculates the average pose for all keypoints from the ref_kpts.dat dataset
 
     avg_pose_file = "../angles_json/avg_pose.json"
     if not os.path.exists(avg_pose_file):

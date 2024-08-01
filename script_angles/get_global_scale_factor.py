@@ -48,7 +48,7 @@ def get_hum_scale_factor():
 
 
 def get_jac_scale_factor():
-    # jac is short for joint_angles_calculate
+    # jac is short for [joint_angles_calculate]
     kpts_file = "../ref_data/ref_kpts.dat"
     kpts = read_keypoints(kpts_file)
 

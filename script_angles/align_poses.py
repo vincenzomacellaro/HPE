@@ -72,7 +72,9 @@ def plot_skeleton(ax, points, connections, color, label):
 
 
 if __name__ == '__main__':
-    # calculates the avg. pose from the kpts_3d.dat file
+    # calculates the avg. pose from the "../ref_data/ref_kpts.dat" file
+
+    # IF RAN AS STANDALONE SCRIPT:
     # a sample pose 'X' is provided in this script to display the alignment process
 
     filename = "../ref_data/ref_kpts.dat"

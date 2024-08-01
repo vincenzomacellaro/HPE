@@ -16,12 +16,6 @@ angles_path_dict = {
     "test": "../angles_data/test/test_data.json"
 }
 
-pos_path_dict = {
-    "train": "../data/train/train_data.json",
-    "val": "../data/val/val_data.json",
-    "test": "../data/test/test_data.json"
-}
-
 scale_factor = None
 avg_pose = None
 
@@ -188,23 +182,6 @@ def extract_joints(joint_files_path, scale=True):
     return output
 
 
-def standardize_features(features, mean=None, std=None):
-    if mean is None or std is None:
-        mean = np.mean(features, axis=0)
-        std = np.std(features, axis=0)
-    standardized = (features - mean) / std
-    return standardized, mean, std
-
-
-def preprocess_data(frame):
-    # Extract coordinates and convert them to a numpy array
-    coords = np.array([frame[str(j)] for j in sorted(frame.keys(), key=int)])
-    # Standardize coordinates
-    standardized_coords, mean_coords, std_coords = standardize_features(coords)
-    # Return flattened array of standardized coordinates
-    return standardized_coords.flatten(), mean_coords, std_coords
-
-
 def calculate_limb_lengths(frame, skeleton):
     limb_lengths = {}
     for (joint1, joint2) in skeleton:
@@ -299,7 +276,7 @@ def load_angles_data(choice):
 
     for sample in joints_data:
 
-        f_sample = filter_samples(sample)                # filters the complete sample to get only the needed data from it
+        f_sample = filter_samples(sample)                # filters the complete sample to get only the needed data
         sample_np = to_numpy(f_sample)                   # converts to numpy values
         flat_sample = flatten_numeric_values(sample_np)  # flattens the numeric values extracted in the previous sample
 
@@ -340,18 +317,25 @@ def load_data_for_train(choice, is_train=False):
 
 
 def convert_to_dictionary(kpts):
-    #its easier to manipulate keypoints by joint name
-    keypoints_to_index = {'lefthip': 6, 'leftknee': 8, 'leftfoot': 10,
-                          'righthip': 7, 'rightknee': 9, 'rightfoot': 11,
-                          'leftshoulder': 0, 'leftelbow': 2, 'leftwrist': 4,
-                          'rightshoulder': 1, 'rightelbow': 3, 'rightwrist': 5}
+
+    keypoints_to_index = {'lefthip': 6,
+                          'leftknee': 8,
+                          'leftfoot': 10,
+                          'righthip': 7,
+                          'rightknee': 9,
+                          'rightfoot': 11,
+                          'leftshoulder': 0,
+                          'leftelbow': 2,
+                          'leftwrist': 4,
+                          'rightshoulder': 1,
+                          'rightelbow': 3,
+                          'rightwrist': 5}
 
     kpts_dict = {}
     for key, k_index in keypoints_to_index.items():
         # Access all frames for a specific joint, here ':' means all frames, adjust as needed
         # print(f"key: {key} - kpts[0][{k_index}]: {kpts[0][k_index]}")
         kpts_dict[key] = kpts[0][k_index]  # Adjusted to handle 3D data (frames, joints, coordinates)
-        # print(f"{key} - {k_index} -> {kpts_dict[key]}")
 
     kpts_dict['joints'] = list(keypoints_to_index.keys())
 
@@ -359,7 +343,7 @@ def convert_to_dictionary(kpts):
 
 
 def add_hips_and_neck(kpts):
-    #we add two new keypoints which are the mid point between the hips and mid point between the shoulders
+    # adding two new keypoints: mid point between the [hips] and mid point between the [shoulders]
 
     #add hips kpts
     difference = kpts['lefthip'] - kpts['righthip']
@@ -377,13 +361,18 @@ def add_hips_and_neck(kpts):
 
     #define the hierarchy of the joints
     hierarchy = {'hips': [],
-                 'lefthip': ['hips'], 'leftknee': ['lefthip', 'hips'], 'leftfoot': ['leftknee', 'lefthip', 'hips'],
-                 'righthip': ['hips'], 'rightknee': ['righthip', 'hips'],
+                 'lefthip': ['hips'],
+                 'leftknee': ['lefthip', 'hips'],
+                 'leftfoot': ['leftknee', 'lefthip', 'hips'],
+                 'righthip': ['hips'],
+                 'rightknee': ['righthip', 'hips'],
                  'rightfoot': ['rightknee', 'righthip', 'hips'],
                  'neck': ['hips'],
-                 'leftshoulder': ['neck', 'hips'], 'leftelbow': ['leftshoulder', 'neck', 'hips'],
+                 'leftshoulder': ['neck', 'hips'],
+                 'leftelbow': ['leftshoulder', 'neck', 'hips'],
                  'leftwrist': ['leftelbow', 'leftshoulder', 'neck', 'hips'],
-                 'rightshoulder': ['neck', 'hips'], 'rightelbow': ['rightshoulder', 'neck', 'hips'],
+                 'rightshoulder': ['neck', 'hips'],
+                 'rightelbow': ['rightshoulder', 'neck', 'hips'],
                  'rightwrist': ['rightelbow', 'rightshoulder', 'neck', 'hips']
                  }
 
