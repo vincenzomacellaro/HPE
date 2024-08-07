@@ -10,8 +10,9 @@ global_scale_factor_file = "../angles_json/global_scale_factor.json"
 
 def get_hum_scale_factor():
     from load_data_utils import load_data
-    data = load_data('train', False)
-    # from the "Human36_to_angles" script, scale: False needed for the hum_scale_factor calculation
+    data = load_data("train", False)
+    # from the "Human36_to_angles" script;
+    # param [scale=False] is needed for the "hum_scale_factor" calculation
     dicts = data["data"]
 
     hum_scale_factors = []

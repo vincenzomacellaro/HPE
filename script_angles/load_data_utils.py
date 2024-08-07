@@ -7,9 +7,15 @@ from human36_to_angles import (extract_coordinates, extract_subject_number, filt
 
 
 angles_path_dict = {
-    "train": "../angles_data/train/train_data.json",
-    "val": "../angles_data/val/val_data.json",
-    "test": "../angles_data/test/test_data.json"
+    "train": ["../angles_data/train/train_data.json"],
+    "val": ["../angles_data/val/val_data.json"],
+    "test": ["../angles_data/test/test_data.json"]
+}
+
+pos_path_dict = {
+    "train": ["../data/train/train_data.json"],
+    "val": ["../data/val/val_data.json"],
+    "test": ["../data/test/test_data.json"]
 }
 
 
@@ -51,7 +57,9 @@ def extract_joints(joint_files_path, scale=True):
 
 
 def load_data(choice, scale=True):
-    path = angles_path_dict[choice]
+    path = pos_path_dict[choice]
+
+    # qua dobbiamo leggere i pos_data_path
     raw_joints_data = extract_joints(path, scale)
     return raw_joints_data
 

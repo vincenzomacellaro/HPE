@@ -103,7 +103,7 @@ def pure_generation_test(vae, num_samples, latent_dim):
         print(f"SAMPLE FROM LATENT SPACE: \n{sample} \n{sample.shape}")
         rec_sample = reconstruct_from_array(sample)
         print(f"REC SAMPLE: \n{rec_sample}")
-        plot_pose_from_joint_angles(rec_sample, "3D pose from pure samples")
+        # plot_pose_from_joint_angles(rec_sample, "3D pose from pure samples")
 
 
 if __name__ == '__main__':
@@ -125,4 +125,4 @@ if __name__ == '__main__':
 
     # reconstruction_test(vae, test_data)
     # generation_test(vae, test_data)
-    pure_generation_test(vae, 5, 20)
+    pure_generation_test(vae, 1, 20)

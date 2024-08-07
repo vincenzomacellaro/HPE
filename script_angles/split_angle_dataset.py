@@ -19,7 +19,7 @@ def save_angles_data(train_path, val_path, test_path):
         elif choice == "test":
             target_path = test_path
 
-        data = load_data(choice)
+        data = load_data("pos", choice)
         dicts = data["data"]
         convert_to_angles(dicts, target_path)
         return
