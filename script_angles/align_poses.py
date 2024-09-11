@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-from get_avg_pose import compute_avg_pose
+from script_angles.get_avg_pose import compute_avg_pose
 
 X = np.array([
     [ 0.93529269,  0.21527771, 15.28411757],

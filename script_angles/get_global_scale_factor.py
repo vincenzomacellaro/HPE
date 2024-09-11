@@ -1,9 +1,10 @@
 import os.path
 import json
 import numpy as np
-import mat_utils as utils
 
-from conversion_utils import convert_to_dictionary, add_hips_and_neck, get_bone_lengths
+import script_angles.mat_utils as utils
+
+from script_angles.conversion_utils import convert_to_dictionary, add_hips_and_neck, get_bone_lengths
 
 global_scale_factor_file = "../angles_json/global_scale_factor.json"
 
@@ -62,7 +63,6 @@ def get_jac_scale_factor():
 
         sample_kpts = convert_to_dictionary(kpts)
         add_hips_and_neck(sample_kpts)
-        get_bone_lengths(sample_kpts)
         get_bone_lengths(sample_kpts)
 
         total_frames.append(sample_kpts)

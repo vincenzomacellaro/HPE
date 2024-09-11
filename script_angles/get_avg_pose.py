@@ -2,6 +2,7 @@ import numpy as np
 import json
 import os
 
+
 def compute_avg_pose(file):
     from load_data_utils import load_ref_kpts
     kpts = load_ref_kpts(file)

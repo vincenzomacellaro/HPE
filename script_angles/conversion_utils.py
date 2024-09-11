@@ -1,11 +1,11 @@
 import json
 import numpy as np
 import os
-import mat_utils as utils
+import script_angles.mat_utils as utils
 
-from general_utils import from_numpy
-from align_poses import procrustes
-from get_avg_pose import get_avg_pose
+from script_angles.general_utils import from_numpy
+from script_angles.align_poses import procrustes
+from script_angles.get_avg_pose import get_avg_pose
 
 avg_pose = None
 
@@ -168,7 +168,6 @@ def get_base_skeleton(kpts, normalization_bone='neck'):
 
     #set bone normalization length; set this value to 1 if you don't want normalization
     normalization = kpts['bone_lengths'][normalization_bone]
-    # normalization = 1
 
     # base skeleton set by multiplying offset directions by measured bone lengths.
     # in this case we use the average of two-sided limbs, e.g left and right hip averaged
@@ -192,6 +191,12 @@ def get_base_skeleton(kpts, normalization_bone='neck'):
     kpts['offset_directions'] = offset_directions
     kpts['base_skeleton'] = base_skeleton
     kpts['normalization'] = normalization
+
+    # print("Raw Bone Lengths:", kpts['bone_lengths'])
+    # print("Offset Directions:", kpts['offset_directions'])
+    # print("Base Skeleton Joint Coordinates:")
+    # for joint, coords in kpts['base_skeleton'].items():
+    #     print(f"{joint}: {coords}")
 
     return
 
@@ -327,7 +332,7 @@ def convert_to_angles(dicts, target_path):
     serialized_data = []
 
     global avg_pose
-    if not avg_pose:
+    if avg_pose is None:
         avg_pose = get_avg_pose()
 
     for joints_array in dicts:

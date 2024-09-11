@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import torch.nn.functional as F
 
 from torch.utils.data import Dataset, DataLoader
-from load_data_utils import load_data_for_train
+from script_angles.load_data_utils import load_data_for_train
 
 
 class CustomDataset(Dataset):
@@ -170,8 +170,8 @@ if __name__ == '__main__':
     train_dataset = CustomDataset(train_data)
     val_dataset = CustomDataset(val_data)
 
-    print(f"Train samples num: {len(train_dataset)}")
-    print(f"Val samples num: {len(val_dataset)}")
+    print(f"[{len(train_dataset)}] Train Samples")
+    print(f"[{len(val_dataset)}] Val Samples")
 
     batch_size = 64
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, drop_last=True)
@@ -179,7 +179,7 @@ if __name__ == '__main__':
 
     input_dim = 47
     hidden_dims = [128, 64]
-    latent_dim = 20
+    latent_dim = 32
     vae = VAE(input_dim, hidden_dims, latent_dim).float()
 
     num_epochs = 100

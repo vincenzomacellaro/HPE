@@ -2,9 +2,9 @@ import re
 import numpy as np
 import os
 
-from general_utils import load_json
-from conversion_utils import create_sample_keys_file
-from get_global_scale_factor import load_global_scale_factor
+from script_angles.general_utils import load_json
+from script_angles.conversion_utils import create_sample_keys_file
+from script_angles.get_global_scale_factor import load_global_scale_factor
 
 avg_pose_file = "../angles_json/avg_pose.json"
 global_scale_factor_file = "../angles_json/global_scale_factor.json"
@@ -76,6 +76,7 @@ joint_index_map = {
 #     9: "Neck",
 # }
 
+
 # function that converts the 17-joints representation of the Human3.6M dataset into the 12-joints one
 def extract_relevant_joints(data):
     frame_data = [None] * 36  # 12 joints x 3 coordinates
@@ -83,6 +84,7 @@ def extract_relevant_joints(data):
     global scale_factor
     if not scale_factor:
         scale_factor = load_global_scale_factor()
+        # scale factor between human3.6M and joint_angles_calculate
 
     for idx, joint_coords in enumerate(data.items()):
         joint_idx = idx + 1
@@ -151,6 +153,7 @@ def extract_subject_number(file_path):
 
 
 def filter_samples(original_sample):
+    # function that filters the original sample to extract only the fields needed for printing
     keys = ['joint_angles', 'hierarchy', 'normalization']
     filtered_sample = {}
 
@@ -171,24 +174,12 @@ def filter_samples(original_sample):
 
                 if len(non_zero_values) > 0:
                     filtered_sample[key][internal_key] = non_zero_values
-
             continue
 
         if key in keys:
             filtered_sample[key] = original_sample[key]
 
     return filtered_sample
-
-
-def max_abs_scaling(data):
-    max_abs = np.max(np.abs(data), axis=0)
-    max_abs[max_abs == 0] = 1  # to avoid division by zero
-    scaled_data = data / max_abs
-    return scaled_data, max_abs
-
-
-def apply_scale(data, scale_params):
-    return data / scale_params
 
 
 def flatten_numeric_values(obj):
@@ -235,6 +226,7 @@ def map_to_base_skeleton(values):
     sk_list = list(sk_map.keys())
     for idx, v in enumerate(values):
         sk_map_key = sk_list[idx]
+
         sk_map_values = np.array(sk_map[sk_list[idx]])
         dict[sk_map_key] = v * sk_map_values
 
@@ -244,21 +236,21 @@ def map_to_base_skeleton(values):
 
 
 def reconstruct_from_array(flat_array, file="../angles_json/sample_keys.json"):
+    # Helper function to reconstruct numpy array from flat numpy array.
     if not os.path.exists(file):
         create_sample_keys_file(file)
 
-    # Helper function to reconstruct numpy array from flat numpy array.
     end_points = ["leftfoot_angles", "rightfoot_angles", "leftwrist_angles", "rightwrist_angles"]
 
     template = {
-        "joints": {},
-        "joint_positions": {},
-        "joint_angles": {},
-        "hierarchy": {},
-        "root_joint": {},
-        "base_skeleton": {},
-        "normalization": {}
-    }
+            "joints": {},
+            "joint_positions": {},
+            "joint_angles": {},
+            "hierarchy": {},
+            "root_joint": {},
+            "base_skeleton": {},
+            "normalization": {}
+        }
 
     # keys from file
     data_dicts = load_json(file)
@@ -266,15 +258,13 @@ def reconstruct_from_array(flat_array, file="../angles_json/sample_keys.json"):
     sample = template.copy()
 
     for temp_key in template:
-        print(f"TEMPLATE KEY: {temp_key}")
+
         if temp_key == 'joints':
             sample[temp_key] = data_dicts["joint_positions_keys"]
-            print(f"JOINTS: {sample[temp_key]}")
             continue
 
         if temp_key == 'joint_positions':
             sample[temp_key]['hips'] = flat_array[flat_idx: flat_idx + 3]
-            print(f"JOINT_POSITIONS: {sample[temp_key]['hips']}")
             flat_idx += 3
             continue
 
@@ -283,7 +273,6 @@ def reconstruct_from_array(flat_array, file="../angles_json/sample_keys.json"):
             for pos_key in data_dicts[curr_key]:
                 sample[temp_key][pos_key] = {}
                 sample[temp_key][pos_key] = float(flat_array[flat_idx])
-                print(f"BONE_LENGTHS: {sample[temp_key][pos_key]}")
                 flat_idx += 1
             continue
 
@@ -303,7 +292,6 @@ def reconstruct_from_array(flat_array, file="../angles_json/sample_keys.json"):
 
         if temp_key == "base_skeleton":
             values_to_map = flat_array[flat_idx: flat_idx + 13]
-            print(values_to_map)
 
             sample[temp_key] = {}
             sample[temp_key] = map_to_base_skeleton(values_to_map)
@@ -314,7 +302,6 @@ def reconstruct_from_array(flat_array, file="../angles_json/sample_keys.json"):
             data_key = temp_key + "_keys"
 
             for entry in data_dicts[data_key]:
-                print(f"{entry}")
                 sample[temp_key][entry] = {}
                 if entry in end_points:
                     sample[temp_key][entry] = np.array([0.0, 0.0, 0.0])
@@ -322,8 +309,6 @@ def reconstruct_from_array(flat_array, file="../angles_json/sample_keys.json"):
                 else:
                     sample[temp_key][entry] = (flat_array[flat_idx: flat_idx + 3]).reshape(1, 3)
                     flat_idx += 3
-
-                print(f"{sample[temp_key][entry]}")
 
     return sample
 
