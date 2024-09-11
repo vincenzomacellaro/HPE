@@ -115,9 +115,6 @@ def test_rec():
     rand_idx = random.randint(0, len(joints_data) - 1)
 
     raw_sample = joints_data[rand_idx]  # raw_sample = dict
-    print(raw_sample)
-    print(raw_sample.keys())
-    print(" *** " + 3)
 
     in_sample = prepare_for_input(raw_sample)
     out_sample = prepare_for_plotting(in_sample)
