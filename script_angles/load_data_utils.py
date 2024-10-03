@@ -98,70 +98,82 @@ def load_angles_data(choice):
 
     for sample in joints_data:
 
-        f_sample = filter_samples(sample)                  # filters the complete sample to get only the needed data
-        sample_np = to_numpy(f_sample)                     # converts to numpy values
-        # flat_sample = flatten_numeric_values(sample_np)    # flattens numeric values extracted
-
+        f_sample = filter_samples(sample)
+        sample_np = to_numpy(f_sample)
         joints_data_np.append(sample_np)
 
     return joints_data_np
 
 
-def calculate_global_scale_factors(data):
-    # Initialize variables to track maximum values
+def calculate_metrics(data):
+    # Initialize variables to track maximum values for [pose] data
     max_pos = 0
-    max_angle = np.pi  # Since angles are in radians
-    max_norm = 0
+    max_angle = np.pi  # angles are in radians
+
+    # Initialize variables to accumulate [physique] data
+    total_bone_lengths = {}
+    count = len(data)  # Total number of samples
+
+    # Initialize physique metrics (bone lengths and base skeleton) to accumulate
+    for joint in data[0]['bone_lengths']:
+        total_bone_lengths[joint] = 0.0
 
     # Iterate through the dataset
     for sample in data:
-
-        # Update maximum position value
+        # Update maximum position value for pose data
         current_max_pos = np.max([np.abs(sample['joint_positions'][joint]) for joint in sample['joint_positions']])
         max_pos = max(max_pos, current_max_pos)
 
-        # Update maximum normalization value
-        max_norm = max(max_norm, sample['normalization'])
+        # Accumulate bone lengths and base skeleton coordinates
+        for joint, length in sample['bone_lengths'].items():
+            total_bone_lengths[joint] += length
 
+    # Calculate averages for physique data
+    avg_bone_lengths = {joint: total / count for joint, total in total_bone_lengths.items()}
+
+    # Prepare output with both pose and physique scale factors
     output = {
         "max_pos": max_pos,
         "max_angle": max_angle,
-        "max_norm": max_norm  # Include this in the output
+        "avg_bone_len": avg_bone_lengths,
     }
 
     return output
 
 
 def normalize_dataset(data, scale_factors):
+
     max_pos = float(scale_factors['max_pos'])
     max_angle = float(scale_factors['max_angle'])
-    max_norm = float(scale_factors['max_norm'])
+    avg_bone_len = scale_factors['avg_bone_len']
 
     normalized_dataset = []
     for sample in data:
         norm_sample = sample.copy()
 
+        # [pose_data] normalization: ['joint_positions'] & ['joint_angles']
         norm_sample['joint_positions'] = {}
         for joint, positions in sample['joint_positions'].items():
-            # Ensure positions are numpy arrays
-            positions = np.array(positions, dtype=float)  # Convert to numpy array if not already
+            positions = np.array(positions, dtype=float)
             norm_sample['joint_positions'][joint] = positions / max_pos
 
         norm_sample['joint_angles'] = {}
         for joint, angles in sample['joint_angles'].items():
-            # Ensure angles are numpy arrays
             angles = np.array(angles, dtype=float)
             norm_sample['joint_angles'][joint] = angles / max_angle
 
-        norm_sample['normalization'] = sample['normalization'] / max_norm
+        # [physique_data] normalization: ['bone_lengths']
+        norm_sample['bone_lengths'] = {}
+        for joint, length in sample['bone_lengths'].items():
+            norm_sample['bone_lengths'][joint] = length / avg_bone_len[joint]
 
         normalized_dataset.append(norm_sample)
 
     return normalized_dataset
 
 
-def normalize_single_sample(sample, scale_factors):
-    # Extract scale factors
+def normalize_sample(sample, scale_factors):
+    # Extract scale factors [FOR POSE DATA ONLY]
     max_pos = float(scale_factors['max_pos'])
     max_angle = float(scale_factors['max_angle'])
     max_norm = float(scale_factors['max_norm'])
@@ -183,86 +195,138 @@ def normalize_single_sample(sample, scale_factors):
         angles = np.array(angles, dtype=float)
         norm_sample['joint_angles'][joint] = angles / max_angle
 
+    # **Do not normalize bone lengths** (physique data)
+    norm_sample['bone_lengths'] = sample['bone_lengths']  # Leave physique data untouched
+
     # Normalize the normalization factor
     norm_sample['normalization'] = sample['normalization'] / max_norm
 
     return norm_sample
 
 
-def reverse_normalize_data(normalized_data, scale_factors):
-    # Convert max_pos to float if it's a string
-    max_pos = float(scale_factors['max_pos'])
-    max_angle = float(scale_factors['max_angle'])
-    max_norm = float(scale_factors['max_norm'])
-
-    original_data = []
-
-    for sample in normalized_data:
-        orig_sample = sample.copy()  # Copy to revert to original
-        # Reverse normalize positions
-        for joint in sample['joint_positions']:
-            orig_sample['joint_positions'][joint] *= max_pos
-
-        # Reverse normalize angles
-        for angle in sample['joint_angles']:
-            orig_sample['joint_angles'][angle] *= max_angle
-
-        for norm in sample['normalization']:
-            orig_sample['normalization'][norm] *= max_norm
-
-        original_data.append(orig_sample)
-
-    return original_data
-
-
-def reverse_normalize_sample(norm_sample, scale_factors):
+def de_normalize_sample(norm_sample, scale_factors):
     # Convert scale factors to float to ensure numerical operations are accurate
     max_pos = float(scale_factors['max_pos'])
     max_angle = float(scale_factors['max_angle'])
-    max_norm = float(scale_factors['max_norm'])
+    avg_bone_len = scale_factors['avg_bone_len']
 
     # Copy the normalized sample to avoid modifying the original input
-    orig_sample = norm_sample.copy()
+    denorm_sample = norm_sample.copy()
 
     # Reverse normalize joint positions
-    orig_sample['joint_positions'] = {joint: positions * max_pos for joint, positions in norm_sample['joint_positions'].items()}
+    denorm_sample['joint_positions'] = {
+        joint: positions * max_pos for joint, positions in norm_sample['joint_positions'].items()
+    }
 
     # Reverse normalize joint angles
-    orig_sample['joint_angles'] = {angle: angles * max_angle for angle, angles in norm_sample['joint_angles'].items()}
+    denorm_sample['joint_angles'] = {
+        angle: angles * max_angle for angle, angles in norm_sample['joint_angles'].items()
+    }
 
-    # Reverse normalize the normalization factor
-    orig_sample['normalization'] = norm_sample['normalization'] * max_norm
+    # Reverse normalize bone lengths (for physique data)
+    denorm_sample['bone_lengths'] = {
+        joint: length * avg_bone_len[joint] for joint, length in norm_sample['bone_lengths'].items()
+    }
 
-    return orig_sample
+    # Reverse normalize base skeleton
+    if 'base_skeleton' in norm_sample:
+        denorm_sample['base_skeleton'] = {}
+        for joint, skeleton_coords in norm_sample['base_skeleton'].items():
+            if joint == 'hips':
+                denorm_sample['base_skeleton'][joint] = skeleton_coords  # 'hips' doesn't need de-normalization
+            else:
+                # We no longer remove 'left' or 'right', we use the full joint name as in avg_bone_len
+                if joint in avg_bone_len:
+                    denorm_sample['base_skeleton'][joint] = skeleton_coords * avg_bone_len[joint]
+                else:
+                    raise KeyError(f"Joint '{joint}' not found in avg_bone_len")
+
+    return denorm_sample
+
+
+def flatten_pose_data(sample):
+    result = []
+
+    # Flatten joint positions
+    for joint, positions in sample['joint_positions'].items():
+        result.extend(positions)  # Extend with the 3D positions (x, y, z)
+
+    # Flatten joint angles
+    for joint, angles in sample['joint_angles'].items():
+        result.extend(angles.flatten())  # Flatten angle arrays
+
+    return np.array(result)
+
+
+def flatten_physique_data(sample):
+    result = []
+
+    # Flatten bone lengths
+    for joint, length in sample['bone_lengths'].items():
+        result.append(length)
+
+    return np.array(result)
 
 
 def flatten_dataset(data):
-    output = []
+    pose_output = []
+    physique_output = []
+
     for dict_sample in data:
-        output.append(flatten_numeric_values(dict_sample))
+        # Flatten pose data (joint positions and joint angles)
+        pose_data = flatten_pose_data(dict_sample)
+        pose_output.append(pose_data)
 
-    return output
+        # Flatten physique data (bone lengths, base skeleton)
+        physique_data = flatten_physique_data(dict_sample)
+        physique_output.append(physique_data)
 
+    return pose_output, physique_output
+
+
+# def load_data_for_train(choice, is_train=False):
+#     data = load_angles_data(choice)
+#     param_file = "../angles_json/scale_factors.json"
+#
+#     if is_train:
+#         scale_factors = calculate_avg_pose_metrics(data)
+#
+#         with open(param_file, 'w') as f:
+#             json.dump(scale_factors, f, indent=4)
+#
+#         normalized_dataset = normalize_dataset(data, scale_factors)
+#         flattened_dataset = flatten_dataset(normalized_dataset)
+#
+#         return flattened_dataset
+#
+#     else:
+#         # param_file is supposed to be already existing in the project
+#         scale_factors = json.load(open(param_file))
+#         normalized_dataset = normalize_dataset(data, scale_factors)
+#         flattened_dataset = flatten_dataset(normalized_dataset)
+#
+#         return flattened_dataset
 
 def load_data_for_train(choice, is_train=False):
     data = load_angles_data(choice)
     param_file = "../angles_json/scale_factors.json"
 
     if is_train:
-        scale_factors = calculate_global_scale_factors(data)
+        scale_factors = calculate_metrics(data)
 
         with open(param_file, 'w') as f:
             json.dump(scale_factors, f, indent=4)
 
-        normalized_dataset = normalize_dataset(data, scale_factors)
-        flattened_dataset = flatten_dataset(normalized_dataset)
-
-        return flattened_dataset
+        # normalized_dataset = normalize_dataset(data, scale_factors)
+        # pose_data, physique_data = flatten_dataset(normalized_dataset)
+        #
+        # return pose_data, physique_data
 
     else:
-        # param_file is supposed to be already existing in the project
         scale_factors = json.load(open(param_file))
-        normalized_dataset = normalize_dataset(data, scale_factors)
-        flattened_dataset = flatten_dataset(normalized_dataset)
 
-        return flattened_dataset
+    normalized_dataset = normalize_dataset(data, scale_factors)
+    pose_data, physique_data = flatten_dataset(normalized_dataset)
+
+    return pose_data, physique_data
+

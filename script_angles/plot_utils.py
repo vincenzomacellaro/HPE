@@ -69,7 +69,7 @@ def plot_base_skeleton(kpts, skeleton):
     plot_pose_from_dict("T-Pose", base_skeleton_dict, skeleton)
 
 
-def plot_pose_from_joint_angles(kpts, title):
+def plot_pose_from_joint_angles(kpts, title, padding=2.5):
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
 
@@ -105,10 +105,10 @@ def plot_pose_from_joint_angles(kpts, title):
 
         plt.plot(xs=[r1[0], r2[0]], ys=[r1[1], r2[1]], zs=[r1[2], r2[2]], color='red')
 
-    # Set axis limits based on the min and max of each coordinate
-    ax.set_xlim([min(all_x) - 0.5, max(all_x) + 0.5])
-    ax.set_ylim([min(all_y) - 0.5, max(all_y) + 0.5])
-    ax.set_zlim([min(all_z) - 0.5, max(all_z) + 0.5])
+    # Set axis limits with increased padding
+    ax.set_xlim([min(all_x) - padding, max(all_x) + padding])
+    ax.set_ylim([min(all_y) - padding, max(all_y) + padding])
+    ax.set_zlim([min(all_z) - padding, max(all_z) + padding])
 
     ax.azim = 90
     ax.elev = -85

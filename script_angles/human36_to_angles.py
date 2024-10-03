@@ -154,7 +154,9 @@ def extract_subject_number(file_path):
 
 def filter_samples(original_sample):
     # function that filters the original sample to extract only the fields needed for printing
-    keys = ['joint_angles', 'hierarchy', 'normalization']
+    # keys = ['joint_angles', 'bone_lengths', 'hierarchy', 'normalization']
+    # 27-09-24 -> new keys dict
+    keys = ['joint_angles', 'bone_lengths']
     filtered_sample = {}
 
     for key in original_sample:
@@ -165,7 +167,8 @@ def filter_samples(original_sample):
             filtered_sample[key][internal_key] = original_sample[key][internal_key]
             continue
 
-        if key == 'joint_angles' or key == 'base_skeleton':
+        # if key == 'joint_angles' or key == 'base_skeleton':
+        if key == 'joint_angles':
             filtered_sample[key] = {}
             for internal_key in original_sample[key]:
 
@@ -246,6 +249,7 @@ def reconstruct_from_array(flat_array, file="../angles_json/sample_keys.json"):
             "joints": {},
             "joint_positions": {},
             "joint_angles": {},
+            "bone_lengths": {},
             "hierarchy": {},
             "root_joint": {},
             "base_skeleton": {},
@@ -254,19 +258,31 @@ def reconstruct_from_array(flat_array, file="../angles_json/sample_keys.json"):
 
     # keys from file
     data_dicts = load_json(file)
-    flat_idx = 0
+    flat_idx = 0  # 0 -> 46, prima pose_data, poi physique_data (bone_lengths)
     sample = template.copy()
 
     for temp_key in template:
 
         if temp_key == 'joints':
-            sample[temp_key] = data_dicts["joint_positions_keys"]
+            sample[temp_key] = data_dicts["joint_positions_keys"]  # read from file
             continue
 
         if temp_key == 'joint_positions':
-            sample[temp_key]['hips'] = flat_array[flat_idx: flat_idx + 3]
+            sample[temp_key]['hips'] = flat_array[flat_idx: flat_idx + 3]  # primi tre elementi dell'array
             flat_idx += 3
             continue
+
+        if temp_key == "joint_angles":
+            data_key = temp_key + "_keys"
+
+            for entry in data_dicts[data_key]:
+                sample[temp_key][entry] = {}
+                if entry in end_points:
+                    sample[temp_key][entry] = np.array([0.0, 0.0, 0.0])
+                    # no need to update the flat_idx in this case as we are "creating" values for the end_points.
+                else:
+                    sample[temp_key][entry] = (flat_array[flat_idx: flat_idx + 3]).reshape(1, 3)
+                    flat_idx += 3
 
         if temp_key == 'bone_lengths':
             curr_key = temp_key + '_keys'
@@ -287,28 +303,52 @@ def reconstruct_from_array(flat_array, file="../angles_json/sample_keys.json"):
             continue
 
         if temp_key == 'normalization':
-            sample[temp_key] = flat_array[-1]
+            sample[temp_key] = 1.0
             continue
 
         if temp_key == "base_skeleton":
-            values_to_map = flat_array[flat_idx: flat_idx + 13]
+            # We need to reconstruct the base skeleton here using the bone_lengths
+            bone_lengths = sample['bone_lengths']
 
-            sample[temp_key] = {}
-            sample[temp_key] = map_to_base_skeleton(values_to_map)
+            # Define offset directions as per the original function
+            offset_directions = {
+                'lefthip': np.array([1, 0, 0]),
+                'leftknee': np.array([0, -1, 0]),
+                'leftfoot': np.array([0, -1, 0]),
+                'righthip': np.array([-1, 0, 0]),
+                'rightknee': np.array([0, -1, 0]),
+                'rightfoot': np.array([0, -1, 0]),
+                'neck': np.array([0, 1, 0]),
+                'leftshoulder': np.array([1, 0, 0]),
+                'leftelbow': np.array([1, 0, 0]),
+                'leftwrist': np.array([1, 0, 0]),
+                'rightshoulder': np.array([-1, 0, 0]),
+                'rightelbow': np.array([-1, 0, 0]),
+                'rightwrist': np.array([-1, 0, 0])
+            }
 
-            flat_idx += 13
+            base_skeleton = {'hips': np.array([0.0, 0.0, 0.0])}
 
-        if temp_key == "joint_angles":
-            data_key = temp_key + "_keys"
+            # Use bone lengths to set the base skeleton
+            def _set_length(joint_type):
+                base_skeleton['left' + joint_type] = offset_directions['left' + joint_type] * (
+                        (bone_lengths['left' + joint_type] + bone_lengths['right' + joint_type]) / 2
+                )
+                base_skeleton['right' + joint_type] = offset_directions['right' + joint_type] * (
+                        (bone_lengths['left' + joint_type] + bone_lengths['right' + joint_type]) / 2
+                )
 
-            for entry in data_dicts[data_key]:
-                sample[temp_key][entry] = {}
-                if entry in end_points:
-                    sample[temp_key][entry] = np.array([0.0, 0.0, 0.0])
-                    # no need to update the flat_idx in this case as we are "creating" values for the end_points.
-                else:
-                    sample[temp_key][entry] = (flat_array[flat_idx: flat_idx + 3]).reshape(1, 3)
-                    flat_idx += 3
+            _set_length('hip')
+            _set_length('knee')
+            _set_length('foot')
+            _set_length('shoulder')
+            _set_length('elbow')
+            _set_length('wrist')
+
+            base_skeleton['neck'] = offset_directions['neck'] * (bone_lengths['neck'])
+
+            sample[temp_key] = base_skeleton
+            continue
 
     return sample
 

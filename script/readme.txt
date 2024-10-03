@@ -1,1 +1,0 @@
-The scripts in the "script" folder will be updated to reflect changes due to the new angles-based approeach

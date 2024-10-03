@@ -167,7 +167,8 @@ def get_base_skeleton(kpts, normalization_bone='neck'):
     offset_directions['rightwrist'] = np.array([-1, 0, 0])
 
     #set bone normalization length; set this value to 1 if you don't want normalization
-    normalization = kpts['bone_lengths'][normalization_bone]
+    # normalization = kpts['bone_lengths'][normalization_bone]
+    normalization = 1
 
     # base skeleton set by multiplying offset directions by measured bone lengths.
     # in this case we use the average of two-sided limbs, e.g left and right hip averaged
@@ -191,12 +192,6 @@ def get_base_skeleton(kpts, normalization_bone='neck'):
     kpts['offset_directions'] = offset_directions
     kpts['base_skeleton'] = base_skeleton
     kpts['normalization'] = normalization
-
-    # print("Raw Bone Lengths:", kpts['bone_lengths'])
-    # print("Offset Directions:", kpts['offset_directions'])
-    # print("Base Skeleton Joint Coordinates:")
-    # for joint, coords in kpts['base_skeleton'].items():
-    #     print(f"{joint}: {coords}")
 
     return
 
@@ -302,30 +297,29 @@ def calculate_joint_angles(kpts):
 
 
 def build_enhanced_sample(kpts):
-    sample = {"joint_positions": {},
-              "joint_angles": {},
-              "bone_lengths": {},
-              "hierarchy": {},
-              "root_joint": {},
-              "base_skeleton": {},
-              "normalization": {}
-              }
+    # Store physique-related and pose-related data separately
+    pose_sample = {"joint_positions": {}, "joint_angles": {}, "hierarchy": {}}
+    physique_sample = {"bone_lengths": {}, "base_skeleton": {}, "normalization": {}, "root_joint": {}}
 
     joints_list = kpts['joints']
+
+    # Pose-related data
     for key in joints_list:
-        sample["joint_positions"][key] = kpts[key]
-        sample["joint_angles"][key + "_angles"] = kpts[key + "_angles"]
-        sample["hierarchy"][key] = kpts["hierarchy"][key]
-        sample["base_skeleton"][key] = kpts["base_skeleton"][key]
+        pose_sample["joint_positions"][key] = kpts[key]
+        pose_sample["joint_angles"][key + "_angles"] = kpts[key + "_angles"]
+        pose_sample["hierarchy"][key] = kpts["hierarchy"][key]
 
-    bone_lenghts_list = kpts['bone_lengths']
-    for key in bone_lenghts_list:
-        sample["bone_lengths"][key] = kpts["bone_lengths"][key]
+    # Physique-related data
+    bone_lengths_list = kpts['bone_lengths']
+    for key in bone_lengths_list:
+        physique_sample["bone_lengths"][key] = kpts["bone_lengths"][key]
 
-    sample["root_joint"] = kpts["root_joint"]
-    sample["normalization"] = kpts["normalization"]
+    # Include base skeleton and root_joint in physique
+    physique_sample["base_skeleton"] = kpts["base_skeleton"]
+    physique_sample["root_joint"] = kpts["root_joint"]
+    physique_sample["normalization"] = kpts["normalization"]
 
-    return sample
+    return pose_sample, physique_sample
 
 
 def convert_to_angles(dicts, target_path):

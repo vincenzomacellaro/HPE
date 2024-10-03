@@ -4,14 +4,14 @@ import os
 import json
 
 from train_vae import VAE
-from plot_utils import plot_pose_from_joint_angles
-from human36_to_angles import reconstruct_from_array
-from load_data_utils import load_data_for_train, reverse_normalize_sample
+from script_angles.plot_utils import plot_pose_from_joint_angles
+from script_angles.human36_to_angles import reconstruct_from_array
+from script_angles.load_data_utils import load_data_for_train, de_normalize_sample
 
 
 def reconstruct_sample(sample, scale_factors):
     rec_sample = reconstruct_from_array(sample)     # [flat] to [dict] sample
-    den_sample = reverse_normalize_sample(rec_sample, scale_factors)  # de_normalize sample
+    den_sample = de_normalize_sample(rec_sample, scale_factors)  # de_normalize sample
     return den_sample
 
 

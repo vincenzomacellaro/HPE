@@ -86,7 +86,7 @@ def gen_model_name(hidden_dims, latent_dim):
     if isinstance(hidden_dims, int):
         hidden_dims = [hidden_dims]  # Convert to list if not already
     hidden_dims_str = 'x'.join(map(str, hidden_dims))  # Joins the list elements to form a string
-    return f"vae_angle_hd{hidden_dims_str}_ld{latent_dim}.pth"
+    return f"vae_hd{hidden_dims_str}_ld{latent_dim}.pth"
 
 
 def train_model(vae, train_loader, val_loader, optimizer, num_epochs, patience=5):
